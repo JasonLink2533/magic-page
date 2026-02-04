@@ -324,6 +324,16 @@
         .success-message.show {
             display: block;
         }
+
+        .email-note {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -341,7 +351,7 @@
         <div class="progress" id="progress">
             <div class="progress-item pending" id="progress-1">
                 <span class="progress-icon">⏳</span>
-                <span>正在调用 Coze API...</span>
+                <span>正在调用 API...</span>
             </div>
             <div class="progress-item pending" id="progress-2">
                 <span class="progress-icon">⏳</span>
@@ -349,11 +359,11 @@
             </div>
             <div class="progress-item pending" id="progress-3">
                 <span class="progress-icon">⏳</span>
-                <span>正在生成剧本...</span>
+                <span>正在合成语音...</span>
             </div>
             <div class="progress-item pending" id="progress-4">
                 <span class="progress-icon">⏳</span>
-                <span>正在合成语音...</span>
+                <span>正在发送邮件...</span>
             </div>
         </div>
 
@@ -372,10 +382,8 @@
                 <button class="btn-secondary" onclick="downloadAudio()">📥 下载音频</button>
             </div>
 
-            <div class="result-item">
-                <div class="result-title">📧 邮件发送</div>
-                <div class="result-description">剧本和音频将发送到您的邮箱</div>
-                <button class="btn-secondary" onclick="sendEmail()">📧 发送到邮箱</button>
+            <div class="email-note">
+                📧 剧本和音频已自动发送到您的邮箱
             </div>
         </div>
 
@@ -390,18 +398,6 @@
             <div class="settings-header">
                 <h2>⚙️ 设置</h2>
                 <button class="close-btn" onclick="closeSettings()">×</button>
-            </div>
-
-            <div class="input-group">
-                <label for="botId">机器人 ID (Bot ID)</label>
-                <input type="text" id="botId" placeholder="例如：7602855095897833498" />
-                <p class="help-text">在 Coze 项目 URL 中可以找到，例如：code.coze.cn/p/7602855095897833498</p>
-            </div>
-
-            <div class="input-group">
-                <label for="apiToken">API Token</label>
-                <input type="text" id="apiToken" placeholder="例如：pat_..." />
-                <p class="help-text">在 Coze 平台获取的个人访问令牌</p>
             </div>
 
             <div class="input-group">
@@ -423,27 +419,21 @@
         // 全局变量保存结果
         let lastResult = null;
 
+        // 配置信息
+        const API_URL = 'https://h7q5nmfcwq.coze.site/stream_run';
+        const PROJECT_ID = '7602855095897833498';
+        const API_TOKEN = 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImUxNWJiODBmLTAyODAtNDM4My1iZDAwLTY3OThiY2M5ZmI3ZSJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb3plLmNuIiwiYXVkIjpbIk1jcHhsQTF4UHNtSG1qbVh5aGZ2bkUzUlVOcXF3Z0gxIl0sImV4cCI6ODIxMDI2Njg3Njc5OSwiaWF0IjoxNzcwMjMyNTkwLCJzdWIiOiJzcGlmZmU6Ly9hcGkuY296ZS5jbi93b3JrbG9hZF9pZGVudGl0eS9pZDo3NjAyODYwMzM0ODg1MzcxOTUwIiwic3JjIjoiaW5ib3VuZF9hdXRoX2FjY2Vzc190b2tlbl9pZDo3NjAzMDkxMDgxODkwMTAzMzA1In0.p6CiU8KHGz9vWRlmUc_xSzLdRop2gxGjNU6O_jQWE_6AVPciPf_8degFjNGUq3cXFUu03w6TnsIHneyJMWeqw1e9R8t_d8wPL4wkjaBVj7Xl9mwVw7z5W8HsQ8n7mc8E2L6rqj9HoSZOvmJzvIo8ET4peMd30jzEpt5pyTNXzp-fkWchxxw-8hU3kGVl1fLO40CXeXI2y4iSBXpLeJFH9mRFmJJoaXpzmLZPnaIxG9QcqkL8O5683IfJQKAdg2tJ5rtqOTrp3evTcce6GusXn8iy6Jh4Xu2zVRqdKtcwNuKQe5M-iWclXUu5pFnM4Fs5zk7lgkULaTTBv-3vsjwLsA';
+
         // 加载保存的设置
         function loadSettings() {
-            const botId = localStorage.getItem('botId') || '';
-            const apiToken = localStorage.getItem('apiToken') || '';
             const userEmail = localStorage.getItem('userEmail') || '';
-
-            document.getElementById('botId').value = botId;
-            document.getElementById('apiToken').value = apiToken;
             document.getElementById('userEmail').value = userEmail;
         }
 
         // 保存设置
         function saveSettings() {
-            const botId = document.getElementById('botId').value.trim();
-            const apiToken = document.getElementById('apiToken').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
-
-            localStorage.setItem('botId', botId);
-            localStorage.setItem('apiToken', apiToken);
             localStorage.setItem('userEmail', userEmail);
-
             showMessage('设置已保存', 'success');
             closeSettings();
         }
@@ -499,39 +489,14 @@
             }
         }
 
-        // 显示加载遮罩
-        function showLoading(text) {
-            document.getElementById('loadingText').textContent = text;
-            document.getElementById('loadingOverlay').classList.add('show');
-        }
-
-        // 隐藏加载遮罩
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('show');
-        }
-
         // 生成故事
         async function generateStory() {
             const idiom = document.getElementById('idiom').value.trim();
-            const botId = localStorage.getItem('botId');
-            const apiToken = localStorage.getItem('apiToken');
             const userEmail = localStorage.getItem('userEmail');
 
             // 验证输入
             if (!idiom) {
                 showMessage('请输入成语', 'error');
-                return;
-            }
-
-            if (!botId) {
-                showMessage('请先在设置中配置机器人 ID (Bot ID)', 'error');
-                openSettings();
-                return;
-            }
-
-            if (!apiToken) {
-                showMessage('请先在设置中配置 API Token', 'error');
-                openSettings();
                 return;
             }
 
@@ -551,27 +516,37 @@
             try {
                 // 步骤 1：调用 Coze API
                 updateProgress(1);
-                showMessage('正在调用 Coze API...', 'success');
+                showMessage('正在调用 API...', 'success');
 
-                const apiUrl = `https://api.coze.cn/open_api/v2/bot/chat`;
-                const response = await fetch(apiUrl, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiToken}`
+                        'Authorization': `Bearer ${API_TOKEN}`,
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        bot_id: botId,
-                        user: "user_" + Date.now(),
-                        query: `请基于成语"${idiom}"创作一个儿童有声读物故事，包括完整的剧本和多角色配音。请返回剧本内容和音频信息。`,
-                        stream: false
+                        content: {
+                            query: {
+                                prompt: [
+                                    {
+                                        type: 'text',
+                                        content: {
+                                            text: `请基于成语"${idiom}"创作一个儿童有声读物故事，包含完整剧本和多角色配音。同时请将剧本和音频发送到邮箱：${userEmail}`
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        type: 'query',
+                        session_id: 'session_' + Date.now(),
+                        project_id: PROJECT_ID
                     })
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('API 错误:', errorText);
-                    throw new Error(`API 调用失败: ${response.status} - ${errorText}`);
+                    throw new Error(`API 调用失败: ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -580,21 +555,44 @@
                 // 步骤 2：处理响应
                 updateProgress(2);
 
-                // 检查响应格式
-                let messageContent = '';
-                if (data && data.messages && data.messages.length > 0) {
-                    const lastMessage = data.messages[data.messages.length - 1];
-                    messageContent = lastMessage.content || '';
+                // 尝试提取剧本内容
+                let scriptContent = '';
+                let audioUrl = '';
+
+                // 尝试不同的响应格式
+                if (data && typeof data === 'string') {
+                    scriptContent = data;
+                } else if (data && data.data) {
+                    scriptContent = data.data;
                 } else if (data && data.content) {
-                    messageContent = data.content;
+                    scriptContent = data.content;
+                } else if (data && data.script) {
+                    scriptContent = data.script;
+                } else if (data && data.output) {
+                    scriptContent = data.output;
                 } else {
-                    throw new Error('API 返回格式不正确，无法获取内容');
+                    scriptContent = JSON.stringify(data, null, 2);
                 }
 
-                console.log('消息内容:', messageContent);
+                // 尝试提取音频 URL
+                if (data && data.audio_url) {
+                    audioUrl = data.audio_url;
+                } else if (data && data.audio) {
+                    audioUrl = data.audio;
+                } else if (data && data.audioUrl) {
+                    audioUrl = data.audioUrl;
+                }
 
-                // 显示内容
-                document.getElementById('scriptContent').textContent = messageContent;
+                console.log('剧本内容:', scriptContent);
+                console.log('音频 URL:', audioUrl);
+
+                // 显示剧本
+                document.getElementById('scriptContent').textContent = scriptContent;
+
+                // 设置音频播放器
+                if (audioUrl) {
+                    document.getElementById('audioPlayer').src = audioUrl;
+                }
 
                 // 步骤 3：显示结果
                 updateProgress(3);
@@ -606,11 +604,12 @@
                 // 保存结果
                 lastResult = {
                     idiom: idiom,
-                    content: messageContent,
+                    content: scriptContent,
+                    audioUrl: audioUrl,
                     data: data
                 };
 
-                showMessage('故事生成成功！', 'success');
+                showMessage('故事生成成功！剧本和音频已发送到邮箱', 'success');
 
             } catch (error) {
                 console.error('生成失败:', error);
@@ -652,35 +651,12 @@
                 return;
             }
 
-            // 检查是否有音频 URL
-            let audioUrl = null;
-            if (lastResult.data && lastResult.data.audio_url) {
-                audioUrl = lastResult.data.audio_url;
-            }
-
-            if (audioUrl) {
-                window.open(audioUrl, '_blank');
+            if (lastResult.audioUrl) {
+                window.open(lastResult.audioUrl, '_blank');
                 showMessage('正在打开音频...', 'success');
             } else {
-                showMessage('当前版本暂不支持音频下载，请关注后续更新', 'error');
+                showMessage('未找到音频 URL', 'error');
             }
-        }
-
-        // 发送邮件
-        function sendEmail() {
-            if (!lastResult) {
-                showMessage('请先生成故事', 'error');
-                return;
-            }
-
-            const userEmail = localStorage.getItem('userEmail');
-            const subject = encodeURIComponent(`📖 儿童有声读物 - ${lastResult.idiom}`);
-            const body = encodeURIComponent(`您生成的成语故事：\n\n${lastResult.content}\n\n\n本邮件由"像魔法一样"发送`);
-            
-            const mailtoLink = `mailto:${userEmail}?subject=${subject}&body=${body}`;
-            window.open(mailtoLink);
-            
-            showMessage('已打开邮件客户端，请发送', 'success');
         }
 
         // 页面加载时加载设置
