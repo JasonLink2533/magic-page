@@ -267,34 +267,6 @@
             margin-top: 5px;
         }
 
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        .loading-overlay.show {
-            display: flex;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
         .error-message {
             background: #fff2f0;
             border: 1px solid #ffccc7;
@@ -410,11 +382,6 @@
         </div>
     </div>
 
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <p id="loadingText">正在处理，请稍候...</p>
-    </div>
-
     <script>
         // 全局变量保存结果
         let lastResult = null;
@@ -518,6 +485,7 @@
                 updateProgress(1);
                 showMessage('正在调用 API...', 'success');
 
+                // ✅ 修复：使用正确的请求格式
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -525,21 +493,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        content: {
-                            query: {
-                                prompt: [
-                                    {
-                                        type: 'text',
-                                        content: {
-                                            text: `请基于成语"${idiom}"创作一个儿童有声读物故事，包含完整剧本和多角色配音。同时请将剧本和音频发送到邮箱：${userEmail}`
-                                        }
-                                    }
-                                ]
-                            }
-                        },
-                        type: 'query',
-                        session_id: 'session_' + Date.now(),
-                        project_id: PROJECT_ID
+                        text: `请基于成语"${idiom}"创作一个儿童有声读物故事，包含完整剧本和多角色配音。同时请将剧本和音频发送到邮箱：${userEmail}`
                     })
                 });
 
