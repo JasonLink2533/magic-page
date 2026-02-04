@@ -179,6 +179,20 @@
             margin-bottom: 10px;
         }
 
+        .script-content {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
         .settings-btn {
             position: fixed;
             top: 20px;
@@ -327,39 +341,41 @@
         <div class="progress" id="progress">
             <div class="progress-item pending" id="progress-1">
                 <span class="progress-icon">⏳</span>
-                <span>分析成语...</span>
+                <span>正在调用 Coze API...</span>
             </div>
             <div class="progress-item pending" id="progress-2">
                 <span class="progress-icon">⏳</span>
-                <span>创作剧本...</span>
+                <span>AI 正在生成故事...</span>
             </div>
             <div class="progress-item pending" id="progress-3">
                 <span class="progress-icon">⏳</span>
-                <span>合成语音...</span>
+                <span>正在生成剧本...</span>
             </div>
             <div class="progress-item pending" id="progress-4">
                 <span class="progress-icon">⏳</span>
-                <span>发送邮件...</span>
+                <span>正在合成语音...</span>
             </div>
         </div>
 
         <div class="result" id="result">
             <div class="result-item">
-                <div class="result-title">📄 正式剧本</div>
-                <div class="result-description">包含完整故事内容和角色台词</div>
-                <button class="btn-secondary" onclick="downloadScript()">下载剧本</button>
+                <div class="result-title">📄 故事剧本</div>
+                <div class="result-description">AI 生成的完整故事内容</div>
+                <div class="script-content" id="scriptContent">正在加载剧本内容...</div>
+                <button class="btn-secondary" onclick="downloadScript()">📥 下载剧本</button>
             </div>
 
             <div class="result-item">
-                <div class="result-title">🎵 完整录音音频</div>
+                <div class="result-title">🎵 配音音频</div>
                 <div class="result-description">多角色配音的高质量音频</div>
-                <button class="btn-secondary" onclick="downloadAudio()">下载音频</button>
+                <audio id="audioPlayer" controls style="width: 100%; margin-bottom: 10px;"></audio>
+                <button class="btn-secondary" onclick="downloadAudio()">📥 下载音频</button>
             </div>
 
             <div class="result-item">
                 <div class="result-title">📧 邮件发送</div>
-                <div class="result-description">剧本和音频已发送到您的邮箱</div>
-                <button class="btn-secondary" onclick="resendEmail()">重新发送邮件</button>
+                <div class="result-description">剧本和音频将发送到您的邮箱</div>
+                <button class="btn-secondary" onclick="sendEmail()">📧 发送到邮箱</button>
             </div>
         </div>
 
@@ -377,15 +393,15 @@
             </div>
 
             <div class="input-group">
-                <label for="apiUrl">API 地址</label>
-                <input type="text" id="apiUrl" placeholder="https://api.coze.cn/..." />
-                <p class="help-text">智能体 API 的调用地址</p>
+                <label for="botId">机器人 ID (Bot ID)</label>
+                <input type="text" id="botId" placeholder="例如：7382893745347863111" />
+                <p class="help-text">在 Coze 项目 URL 中可以找到，例如：code.coze.cn/p/7382893745347863111</p>
             </div>
 
             <div class="input-group">
                 <label for="apiToken">API Token</label>
-                <input type="text" id="apiToken" placeholder="请输入 API Token" />
-                <p class="help-text">在 Coze 平台获取的 API Token</p>
+                <input type="text" id="apiToken" placeholder="例如：pat_..." />
+                <p class="help-text">在 Coze 平台获取的个人访问令牌</p>
             </div>
 
             <div class="input-group">
@@ -394,34 +410,37 @@
                 <p class="help-text">剧本和音频将发送到此邮箱</p>
             </div>
 
-            <button class="btn-primary" onclick="saveSettings()">保存设置</button>
+            <button class="btn-primary" onclick="saveSettings()">💾 保存设置</button>
         </div>
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
-        <p>正在生成故事，请稍候...</p>
+        <p id="loadingText">正在处理，请稍候...</p>
     </div>
 
     <script>
+        // 全局变量保存结果
+        let lastResult = null;
+
         // 加载保存的设置
         function loadSettings() {
-            const apiUrl = localStorage.getItem('apiUrl') || '';
+            const botId = localStorage.getItem('botId') || '';
             const apiToken = localStorage.getItem('apiToken') || '';
             const userEmail = localStorage.getItem('userEmail') || '';
 
-            document.getElementById('apiUrl').value = apiUrl;
+            document.getElementById('botId').value = botId;
             document.getElementById('apiToken').value = apiToken;
             document.getElementById('userEmail').value = userEmail;
         }
 
         // 保存设置
         function saveSettings() {
-            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const botId = document.getElementById('botId').value.trim();
             const apiToken = document.getElementById('apiToken').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
 
-            localStorage.setItem('apiUrl', apiUrl);
+            localStorage.setItem('botId', botId);
             localStorage.setItem('apiToken', apiToken);
             localStorage.setItem('userEmail', userEmail);
 
@@ -480,10 +499,21 @@
             }
         }
 
+        // 显示加载遮罩
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        // 隐藏加载遮罩
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
         // 生成故事
         async function generateStory() {
             const idiom = document.getElementById('idiom').value.trim();
-            const apiUrl = localStorage.getItem('apiUrl');
+            const botId = localStorage.getItem('botId');
             const apiToken = localStorage.getItem('apiToken');
             const userEmail = localStorage.getItem('userEmail');
 
@@ -493,8 +523,8 @@
                 return;
             }
 
-            if (!apiUrl) {
-                showMessage('请先在设置中配置 API 地址', 'error');
+            if (!botId) {
+                showMessage('请先在设置中配置机器人 ID (Bot ID)', 'error');
                 openSettings();
                 return;
             }
@@ -514,19 +544,16 @@
             // 显示进度
             document.getElementById('progress').classList.add('show');
             document.getElementById('result').classList.remove('show');
+            
+            // 重置进度
+            updateProgress(0);
 
             try {
-                // 模拟进度更新
+                // 步骤 1：调用 Coze API
                 updateProgress(1);
-                await sleep(1000);
-                updateProgress(2);
-                await sleep(1500);
-                updateProgress(3);
-                await sleep(2000);
-                updateProgress(4);
-                await sleep(1000);
+                showMessage('正在调用 Coze API...', 'success');
 
-                // 调用 API
+                const apiUrl = `https://api.coze.cn/open_api/v2/bot/chat`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -534,24 +561,54 @@
                         'Authorization': `Bearer ${apiToken}`
                     },
                     body: JSON.stringify({
-                        idiom: idiom,
-                        email: userEmail
+                        bot_id: botId,
+                        user: "user_" + Date.now(),
+                        query: `请基于成语"${idiom}"创作一个儿童有声读物故事，包括完整的剧本和多角色配音。请返回剧本内容和音频信息。`,
+                        stream: false
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 调用失败: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('API 错误:', errorText);
+                    throw new Error(`API 调用失败: ${response.status} - ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('API 响应:', data);
 
-                // 显示结果
-                updateProgress(5);
+                // 步骤 2：处理响应
+                updateProgress(2);
+
+                // 检查响应格式
+                let messageContent = '';
+                if (data && data.messages && data.messages.length > 0) {
+                    const lastMessage = data.messages[data.messages.length - 1];
+                    messageContent = lastMessage.content || '';
+                } else if (data && data.content) {
+                    messageContent = data.content;
+                } else {
+                    throw new Error('API 返回格式不正确，无法获取内容');
+                }
+
+                console.log('消息内容:', messageContent);
+
+                // 显示内容
+                document.getElementById('scriptContent').textContent = messageContent;
+
+                // 步骤 3：显示结果
+                updateProgress(3);
+                updateProgress(4);
+
                 document.getElementById('progress').classList.remove('show');
                 document.getElementById('result').classList.add('show');
 
-                // 保存结果数据
-                localStorage.setItem('lastResult', JSON.stringify(data));
+                // 保存结果
+                lastResult = {
+                    idiom: idiom,
+                    content: messageContent,
+                    data: data
+                };
 
                 showMessage('故事生成成功！', 'success');
 
@@ -564,89 +621,72 @@
 
         // 下载剧本
         function downloadScript() {
-            const lastResult = localStorage.getItem('lastResult');
             if (!lastResult) {
                 showMessage('请先生成故事', 'error');
                 return;
             }
 
-            const data = JSON.parse(lastResult);
-            if (data.script_url) {
-                window.open(data.script_url, '_blank');
-            } else {
-                showMessage('剧本链接不可用', 'error');
+            try {
+                const content = lastResult.content;
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${lastResult.idiom}_剧本.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showMessage('剧本下载成功！', 'success');
+            } catch (error) {
+                showMessage(`下载失败: ${error.message}`, 'error');
             }
         }
 
         // 下载音频
         function downloadAudio() {
-            const lastResult = localStorage.getItem('lastResult');
             if (!lastResult) {
                 showMessage('请先生成故事', 'error');
                 return;
             }
 
-            const data = JSON.parse(lastResult);
-            if (data.audio_url) {
-                window.open(data.audio_url, '_blank');
+            // 检查是否有音频 URL
+            let audioUrl = null;
+            if (lastResult.data && lastResult.data.audio_url) {
+                audioUrl = lastResult.data.audio_url;
+            }
+
+            if (audioUrl) {
+                window.open(audioUrl, '_blank');
+                showMessage('正在打开音频...', 'success');
             } else {
-                showMessage('音频链接不可用', 'error');
+                showMessage('当前版本暂不支持音频下载，请关注后续更新', 'error');
             }
         }
 
-        // 重新发送邮件
-        async function resendEmail() {
-            const lastResult = localStorage.getItem('lastResult');
+        // 发送邮件
+        function sendEmail() {
             if (!lastResult) {
                 showMessage('请先生成故事', 'error');
                 return;
             }
 
-            const apiUrl = localStorage.getItem('apiUrl');
-            const apiToken = localStorage.getItem('apiToken');
             const userEmail = localStorage.getItem('userEmail');
-            const data = JSON.parse(lastResult);
-
-            try {
-                const response = await fetch(`${apiUrl}/resend`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiToken}`
-                    },
-                    body: JSON.stringify({
-                        email: userEmail,
-                        result_id: data.id
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`发送失败: ${response.status}`);
-                }
-
-                showMessage('邮件已重新发送', 'success');
-
-            } catch (error) {
-                showMessage(`发送失败: ${error.message}`, 'error');
-            }
-        }
-
-        // 辅助函数
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+            const subject = encodeURIComponent(`📖 儿童有声读物 - ${lastResult.idiom}`);
+            const body = encodeURIComponent(`您生成的成语故事：\n\n${lastResult.content}\n\n\n本邮件由"像魔法一样"发送`);
+            
+            const mailtoLink = `mailto:${userEmail}?subject=${subject}&body=${body}`;
+            window.open(mailtoLink);
+            
+            showMessage('已打开邮件客户端，请发送', 'success');
         }
 
         // 页面加载时加载设置
         window.onload = function() {
             loadSettings();
         };
-
-        // 点击模态框外部关闭
-        document.getElementById('settingsModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeSettings();
-            }
-        });
     </script>
 </body>
 </html>
