@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像魔法一样</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 12px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .progress {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .progress.show {
+            display: block;
+        }
+
+        .progress-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .progress-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .progress-item.pending .progress-icon {
+            color: #ccc;
+        }
+
+        .progress-item.in-progress .progress-icon {
+            color: #667eea;
+            animation: spin 1s linear infinite;
+        }
+
+        .progress-item.completed .progress-icon {
+            color: #52c41a;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .result-description {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .settings-modal.show {
+            display: flex;
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: auto;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ 像魔法一样</h1>
+        <p class="subtitle">输入成语，生成精彩故事</p>
+
+        <div class="input-group">
+            <label for="idiom">输入成语</label>
+            <input type="text" id="idiom" placeholder="例如：守株待兔" />
+        </div>
+
+        <button class="btn-primary" onclick="generateStory()">🪄 生成故事</button>
+
+        <div class="progress" id="progress">
+            <div class="progress-item pending" id="progress-1">
+                <span class="progress-icon">⏳</span>
+                <span>分析成语...</span>
+            </div>
+            <div class="progress-item pending" id="progress-2">
+                <span class="progress-icon">⏳</span>
+                <span>创作剧本...</span>
+            </div>
+            <div class="progress-item pending" id="progress-3">
+                <span class="progress-icon">⏳</span>
+                <span>合成语音...</span>
+            </div>
+            <div class="progress-item pending" id="progress-4">
+                <span class="progress-icon">⏳</span>
+                <span>发送邮件...</span>
+            </div>
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-item">
+                <div class="result-title">📄 正式剧本</div>
+                <div class="result-description">包含完整故事内容和角色台词</div>
+                <button class="btn-secondary" onclick="downloadScript()">下载剧本</button>
+            </div>
+
+            <div class="result-item">
+                <div class="result-title">🎵 完整录音音频</div>
+                <div class="result-description">多角色配音的高质量音频</div>
+                <button class="btn-secondary" onclick="downloadAudio()">下载音频</button>
+            </div>
+
+            <div class="result-item">
+                <div class="result-title">📧 邮件发送</div>
+                <div class="result-description">剧本和音频已发送到您的邮箱</div>
+                <button class="btn-secondary" onclick="resendEmail()">重新发送邮件</button>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+    </div>
+
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>⚙️ 设置</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="input-group">
+                <label for="apiUrl">API 地址</label>
+                <input type="text" id="apiUrl" placeholder="https://api.coze.cn/..." />
+                <p class="help-text">智能体 API 的调用地址</p>
+            </div>
+
+            <div class="input-group">
+                <label for="apiToken">API Token</label>
+                <input type="text" id="apiToken" placeholder="请输入 API Token" />
+                <p class="help-text">在 Coze 平台获取的 API Token</p>
+            </div>
+
+            <div class="input-group">
+                <label for="userEmail">接收邮箱</label>
+                <input type="email" id="userEmail" placeholder="your@email.com" />
+                <p class="help-text">剧本和音频将发送到此邮箱</p>
+            </div>
+
+            <button class="btn-primary" onclick="saveSettings()">保存设置</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>正在生成故事，请稍候...</p>
+    </div>
+
+    <script>
+        // 加载保存的设置
+        function loadSettings() {
+            const apiUrl = localStorage.getItem('apiUrl') || '';
+            const apiToken = localStorage.getItem('apiToken') || '';
+            const userEmail = localStorage.getItem('userEmail') || '';
+
+            document.getElementById('apiUrl').value = apiUrl;
+            document.getElementById('apiToken').value = apiToken;
+            document.getElementById('userEmail').value = userEmail;
+        }
+
+        // 保存设置
+        function saveSettings() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const apiToken = document.getElementById('apiToken').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+
+            localStorage.setItem('apiUrl', apiUrl);
+            localStorage.setItem('apiToken', apiToken);
+            localStorage.setItem('userEmail', userEmail);
+
+            showMessage('设置已保存', 'success');
+            closeSettings();
+        }
+
+        // 打开设置
+        function openSettings() {
+            loadSettings();
+            document.getElementById('settingsModal').classList.add('show');
+        }
+
+        // 关闭设置
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('show');
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+
+            if (type === 'error') {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                successElement.classList.remove('show');
+            } else {
+                successElement.textContent = message;
+                successElement.classList.add('show');
+                errorElement.classList.remove('show');
+            }
+
+            setTimeout(() => {
+                errorElement.classList.remove('show');
+                successElement.classList.remove('show');
+            }, 5000);
+        }
+
+        // 更新进度
+        function updateProgress(step) {
+            for (let i = 1; i <= 4; i++) {
+                const element = document.getElementById(`progress-${i}`);
+                element.classList.remove('pending', 'in-progress', 'completed');
+
+                if (i < step) {
+                    element.classList.add('completed');
+                    element.querySelector('.progress-icon').textContent = '✅';
+                } else if (i === step) {
+                    element.classList.add('in-progress');
+                    element.querySelector('.progress-icon').textContent = '⏳';
+                } else {
+                    element.classList.add('pending');
+                    element.querySelector('.progress-icon').textContent = '⏳';
+                }
+            }
+        }
+
+        // 生成故事
+        async function generateStory() {
+            const idiom = document.getElementById('idiom').value.trim();
+            const apiUrl = localStorage.getItem('apiUrl');
+            const apiToken = localStorage.getItem('apiToken');
+            const userEmail = localStorage.getItem('userEmail');
+
+            // 验证输入
+            if (!idiom) {
+                showMessage('请输入成语', 'error');
+                return;
+            }
+
+            if (!apiUrl) {
+                showMessage('请先在设置中配置 API 地址', 'error');
+                openSettings();
+                return;
+            }
+
+            if (!apiToken) {
+                showMessage('请先在设置中配置 API Token', 'error');
+                openSettings();
+                return;
+            }
+
+            if (!userEmail) {
+                showMessage('请先在设置中配置接收邮箱', 'error');
+                openSettings();
+                return;
+            }
+
+            // 显示进度
+            document.getElementById('progress').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+
+            try {
+                // 模拟进度更新
+                updateProgress(1);
+                await sleep(1000);
+                updateProgress(2);
+                await sleep(1500);
+                updateProgress(3);
+                await sleep(2000);
+                updateProgress(4);
+                await sleep(1000);
+
+                // 调用 API
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify({
+                        idiom: idiom,
+                        email: userEmail
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 调用失败: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 显示结果
+                updateProgress(5);
+                document.getElementById('progress').classList.remove('show');
+                document.getElementById('result').classList.add('show');
+
+                // 保存结果数据
+                localStorage.setItem('lastResult', JSON.stringify(data));
+
+                showMessage('故事生成成功！', 'success');
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                showMessage(`生成失败: ${error.message}`, 'error');
+                document.getElementById('progress').classList.remove('show');
+            }
+        }
+
+        // 下载剧本
+        function downloadScript() {
+            const lastResult = localStorage.getItem('lastResult');
+            if (!lastResult) {
+                showMessage('请先生成故事', 'error');
+                return;
+            }
+
+            const data = JSON.parse(lastResult);
+            if (data.script_url) {
+                window.open(data.script_url, '_blank');
+            } else {
+                showMessage('剧本链接不可用', 'error');
+            }
+        }
+
+        // 下载音频
+        function downloadAudio() {
+            const lastResult = localStorage.getItem('lastResult');
+            if (!lastResult) {
+                showMessage('请先生成故事', 'error');
+                return;
+            }
+
+            const data = JSON.parse(lastResult);
+            if (data.audio_url) {
+                window.open(data.audio_url, '_blank');
+            } else {
+                showMessage('音频链接不可用', 'error');
+            }
+        }
+
+        // 重新发送邮件
+        async function resendEmail() {
+            const lastResult = localStorage.getItem('lastResult');
+            if (!lastResult) {
+                showMessage('请先生成故事', 'error');
+                return;
+            }
+
+            const apiUrl = localStorage.getItem('apiUrl');
+            const apiToken = localStorage.getItem('apiToken');
+            const userEmail = localStorage.getItem('userEmail');
+            const data = JSON.parse(lastResult);
+
+            try {
+                const response = await fetch(`${apiUrl}/resend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiToken}`
+                    },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        result_id: data.id
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`发送失败: ${response.status}`);
+                }
+
+                showMessage('邮件已重新发送', 'success');
+
+            } catch (error) {
+                showMessage(`发送失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 辅助函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 页面加载时加载设置
+        window.onload = function() {
+            loadSettings();
+        };
+
+        // 点击模态框外部关闭
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html>
